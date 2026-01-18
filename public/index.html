@@ -4,14 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NDHSCCI St. Albert Library System</title>
-
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#1e3a8a">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="apple-touch-icon" href="/icon-192.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="NDHSCCI Library">
   
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -58,6 +50,37 @@
     .photo-upload-box.has-photo {
       border-style: solid;
       border-color: #10b981;
+    }
+    
+    /* ========== NEW: PROFESSIONAL UX ANIMATIONS ========== */
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+    }
+    
+    *:focus {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
+    
+    input[type="checkbox"] {
+      cursor: pointer;
+      accent-color: #3b82f6;
+    }
+    
+    kbd {
+      font-family: monospace;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.125rem 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.25rem;
     }
   </style>
 </head>
@@ -129,6 +152,100 @@
             </div>
           ))}
         </div>
+     );
+    }
+
+    // ==================== PROFESSIONAL UX COMPONENTS ====================
+    
+    function KeyboardShortcutsModal({ show, onClose }) {
+      if (!show) return null;
+      
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-bold text-blue-900">⌨️ Keyboard Shortcuts</h2>
+              <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">✖️</button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="border-2 border-gray-200 rounded-lg p-4">
+                <h3 className="font-bold text-lg mb-3 text-blue-700">Navigation</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-600">Search</span><kbd>Ctrl + K</kbd></div>
+                  <div className="flex justify-between"><span className="text-gray-600">Refresh</span><kbd>Ctrl + R</kbd></div>
+                </div>
+              </div>
+              <div className="border-2 border-gray-200 rounded-lg p-4">
+                <h3 className="font-bold text-lg mb-3 text-green-700">Selection</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-600">Select All</span><kbd>Ctrl + A</kbd></div>
+                  <div className="flex justify-between"><span className="text-gray-600">Deselect</span><kbd>Esc</kbd></div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+              <p className="text-sm text-blue-900"><strong>💡 Tip:</strong> Press <kbd>?</kbd> to show this dialog</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    function BulkActionsBar({ selectedCount, onAction, onClearSelection }) {
+      if (selectedCount === 0) return null;
+      
+      return (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40" style={{ animation: 'slideUp 0.3s ease-out' }}>
+          <div className="bg-blue-900 text-white rounded-2xl shadow-2xl p-4 flex items-center gap-4 border-4 border-blue-600">
+            <span className="font-bold text-lg flex items-center gap-2"> 
+              <span className="text-2xl">✓</span>
+              <span>{selectedCount} selected</span>
+            </span>
+            <div className="h-8 w-px bg-blue-600"></div>
+            <button onClick={() => onAction('export')} className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition-colors">
+              📥 Export
+            </button>
+            <button onClick={() => onAction('photos')} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition-colors">
+              📸 Photos
+            </button>
+            <button onClick={onClearSelection} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors">
+              ✖️ Clear
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    function ActionInsightsPanel({ students }) {
+      const missingPhotos = students.filter(s => !s.photo).length;
+      const incomplete = students.filter(s => !s.email || !s.phone || !s.birthday).length;
+      
+      if (missingPhotos === 0 && incomplete === 0) return null;
+      
+      return (
+        <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-400 rounded-xl p-6 shadow-lg">
+          <h3 className="text-xl font-bold text-yellow-800 mb-4 flex items-center gap-2">
+            ⚠️ Attention Needed
+          </h3>
+          <div className="space-y-3">
+            {missingPhotos > 0 && (
+              <div className="flex justify-between items-center bg-white rounded-lg p-3 border-l-4 border-yellow-500">
+                <div>
+                  <p className="font-semibold text-gray-800">📸 {missingPhotos} students missing photos</p>
+                  <p className="text-sm text-gray-600">Photos are required for ID card generation</p>
+                </div>
+              </div>
+            )}
+            {incomplete > 0 && (
+              <div className="flex justify-between items-center bg-white rounded-lg p-3 border-l-4 border-orange-500">
+                <div>
+                  <p className="font-semibold text-gray-800">📝 {incomplete} incomplete registrations</p>
+                  <p className="text-sm text-gray-600">Missing email, phone, or birthday information</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       );
     }
 
@@ -165,13 +282,35 @@
         name: '', course: '', year: '', studentNumber: '', email: '', phone: '', cardExpiry: '', birthday: '', gender: '', section: '', photo: ''
       });
       const [formErrors, setFormErrors] = useState({});
-      const [uploadedPhoto, setUploadedPhoto] = useState('');
+      const [uploadedPhoto, setUploadedPhoto] = useState(''); 
+      const [selectedStudents, setSelectedStudents] = useState([]);
+      const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
 
       useEffect(() => {
         loadData();
         const interval = setInterval(loadData, 30000);
         return () => clearInterval(interval);
       }, []);
+      
+      useEffect(() => {
+        const handleKeyboard = (e) => {
+          if (e.key === '?' && !e.ctrlKey && !e.altKey) {
+            e.preventDefault();
+            setShowKeyboardShortcuts(true);
+          }
+          if (e.key === 'Escape') {
+            setShowKeyboardShortcuts(false);
+            setSelectedStudents([]);
+          }
+          if (e.ctrlKey && e.key === 'a' && currentView === 'admin') {
+            e.preventDefault();
+            setSelectedStudents(students.map(s => s.id));
+          }
+        };
+        
+        document.addEventListener('keydown', handleKeyboard);
+        return () => document.removeEventListener('keydown', handleKeyboard);
+      }, [currentView, students]);
 
       const loadData = async () => {
         try {
@@ -225,6 +364,93 @@
           setActivityLog([activity, ...activityLog]);
         } catch (error) {
           console.error('Error adding activity:', error);
+        }
+      };
+
+      // NEW: Bulk Actions Handler
+      const handleBulkAction = async (action) => { 
+        if (selectedStudents.length === 0) {
+          showToast('No Selection', 'Please select students first', 'warning');
+          return;
+        }
+        const handlePhotoUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        if (!file.type.startsWith('image/')) {
+          showToast('Invalid File', 'Please upload an image file (JPG, PNG)', 'error');
+          return;
+        }
+        
+        if (file.size > 2 * 1024 * 1024) {
+          showToast('File Too Large', 'Image size must be less than 2MB', 'error');
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setUploadedPhoto(reader.result);
+          showToast('Photo Selected', 'Photo uploaded successfully!', 'success');
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+      };
+        if (action === 'export') {
+          const selectedData = students.filter(s => selectedStudents.includes(s.id));
+          const headers = ['Name', 'Student Number', 'Course', 'Year', 'Section', 'Gender', 'Email', 'Phone', 'Birthday'];
+          const csv = [
+            headers.join(','),
+            ...selectedData.map(s => [
+              s.name || '',
+              s.studentNumber || '',
+              s.course || '',
+              s.year || '',
+              s.section || '',
+              s.gender || '',
+              s.email || '',
+              s.phone || '',
+              s.birthday || ''
+            ].join(','))
+          ].join('\n');
+          
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `students_export_${new Date().toISOString().split('T')[0]}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          
+          showToast('Export Complete', `Exported ${selectedData.length} students`, 'success');
+          setSelectedStudents([]);
+        }
+        
+        if (action === 'photos') {
+          const withPhotos = students.filter(s => selectedStudents.includes(s.id) && s.photo);
+          if (withPhotos.length === 0) {
+            showToast('No Photos', 'Selected students have no photos', 'warning');
+            return;
+          }
+          
+          showToast('Downloading', `Downloading ${withPhotos.length} photos...`, 'info');
+          
+          withPhotos.forEach((student, index) => {
+            setTimeout(() => {
+              const link = document.createElement('a');
+              link.href = student.photo;
+              link.download = `${student.studentNumber}.jpg`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }, index * 300);
+          });
+          
+          setTimeout(() => {
+            setSelectedStudents([]);
+            showToast('Download Complete', `Downloaded ${withPhotos.length} photos`, 'success');
+          }, withPhotos.length * 300 + 500);
         }
       };
 
@@ -481,6 +707,22 @@
         }
       };
 
+      const handlePermanentDelete = async (id, name) => {
+        if (window.confirm(`⚠️ PERMANENTLY DELETE ${name}?\n\nThis action CANNOT be undone!\nAll data including photo will be lost forever.\n\nAre you absolutely sure?`)) {
+          if (window.confirm(`Final confirmation: Delete ${name} permanently?`)) {
+            try {
+              await fetch(`/api/archived/${id}`, { method: 'DELETE' });
+              await loadData();
+              await addActivity('PERMANENT_DELETE', `Permanently deleted: ${name} (ID: ${id})`);
+              showToast('Permanently Deleted', `${name} has been permanently deleted`, 'success');
+            } catch (error) {
+              console.error('Permanent delete error:', error);
+              showToast('Delete Failed', 'Failed to permanently delete student', 'error');
+            }
+          }
+        }
+      };
+
       const handleAdminLogin = () => {
         if (loginUsername === adminCredentials.username && loginPassword === adminCredentials.password) {
           setIsAdminLoggedIn(true);
@@ -660,6 +902,43 @@
           });
           
           showToast('Download Started', `Downloading ${studentsWithPhotos.length} photos...`, 'info');
+        }
+      };
+
+      const exportAllPhotosToFolder = async () => {
+        const studentsWithPhotos = students.filter(s => s.photo);
+        
+        if (studentsWithPhotos.length === 0) {
+          showToast('No Photos', 'No student photos available to export', 'warning');
+          return;
+        }
+
+        if (window.confirm(`Export ${studentsWithPhotos.length} photos to server folder?\n\nPhotos will be saved as:\n📁 student_photos/BSM26-001.jpg\n📁 student_photos/BSRT26-015.jpg\netc.`)) {
+          try {
+            showToast('Exporting...', 'Saving all photos to folder...', 'info');
+            
+            const response = await fetch('/api/photos/export-all', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+              await addActivity('EXPORT_PHOTOS', `Exported ${result.saved} photos to folder`);
+              showToast('Export Complete!', `✅ ${result.saved} photos saved to student_photos folder!\n\nLocation: ${result.directory}`, 'success');
+              
+              if (result.errors.length > 0) {
+                console.warn('Some photos failed to export:', result.errors);
+                showToast('Partial Success', `${result.saved} saved, ${result.errors.length} failed`, 'warning');
+              }
+            } else {
+              showToast('Export Failed', 'Failed to export photos', 'error');
+            }
+          } catch (error) {
+            console.error('Export error:', error);
+            showToast('Export Failed', 'An error occurred while exporting photos', 'error');
+          }
         }
       };
 
@@ -1229,7 +1508,7 @@
                       🔓 Login
                     </button>
                     <p className="text-center text-sm text-gray-600 mt-4">
-                      Default: admin / admin123
+                     
                     </p>
                   </div>
                 </div>
@@ -1242,6 +1521,14 @@
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-3xl font-bold text-blue-900">Admin Panel</h2>
                     <div className="flex gap-2 flex-wrap">
+                      {/* NEW: Help Button */}
+                      <button
+                        onClick={() => setShowKeyboardShortcuts(true)}
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold flex items-center gap-2"
+                        title="Keyboard Shortcuts (Press ?)"
+                      >
+                        ⌨️ Help
+                      </button>
                       <button
                         onClick={async () => {
                           await loadData();
@@ -1271,16 +1558,17 @@
                         <Icons.Activity /> Activity
                       </button>
                       <button
-                        onClick={downloadAllPhotos}
-                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold flex items-center gap-2"
+                        onClick={exportAllPhotosToFolder}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold flex items-center gap-2"
+                        title="Export all photos to student_photos folder"
                       >
-                        <Icons.Camera /> Photos
+                        📁 Export Photos
                       </button>
                       <button
                         onClick={exportToExcel}
                         className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center gap-2"
                       >
-                        <Icons.Download /> Export
+                        <Icons.Download /> Export CSV
                       </button>
                     </div>
                   </div>
@@ -1357,22 +1645,57 @@
                       ) : (
                         <div className="space-y-3 max-h-96 overflow-y-auto">
                           {archivedStudents.map(student => (
-                            <div key={student.id} className="bg-white p-4 rounded-lg border-2 border-gray-300 flex justify-between items-center">
-                              <div className="flex gap-4 items-center">
-                                {student.photo && (
-                                  <img src={student.photo} alt={student.name} className="w-16 h-16 object-cover border-2 border-gray-300 rounded-lg" />
-                                )}
-                                <div>
-                                  <p className="font-bold text-lg">{student.name}</p>
+                            <div key={student.id} className="bg-white p-4 rounded-lg border-2 border-gray-300">
+                              <div className="flex items-center gap-4">
+                                {/* Photo on LEFT */}
+                                <div className="flex-shrink-0">
+                                  {student.photo ? (
+                                    <img 
+                                      src={student.photo} 
+                                      alt={student.name} 
+                                      className="w-20 h-20 object-cover border-2 border-gray-400 rounded-lg cursor-pointer hover:shadow-lg transition-shadow"
+                                      onClick={() => {
+                                        const link = document.createElement('a');
+                                        link.href = student.photo;
+                                        link.download = `${student.studentNumber}_archived.jpg`;
+                                        link.click();
+                                        showToast('Photo Downloaded', `${student.studentNumber} photo saved!`, 'success');
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="w-20 h-20 bg-gray-200 border-2 border-gray-400 rounded-lg flex items-center justify-center">
+                                      <span className="text-2xl">📷</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Student Info */}
+                                <div className="flex-1">
+                                  <p className="font-bold text-lg text-gray-800">{student.name}</p>
                                   <p className="text-sm text-gray-600">{student.studentNumber} - {getCombinedLabel(student.course, student.year, student.section)}</p>
+                                  {student.archivedDate && (
+                                    <p className="text-xs text-gray-500 mt-1">🗑️ Archived: {student.archivedDate} {student.archivedTime && `at ${student.archivedTime}`}</p>
+                                  )}
+                                </div>
+                                
+                                {/* Action Buttons */}
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleRestore(student.id)}
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center gap-2"
+                                    title="Restore student to active list"
+                                  >
+                                    ♻️ Restore
+                                  </button>
+                                  <button
+                                    onClick={() => handlePermanentDelete(student.id, student.name)}
+                                    className="px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded-lg font-semibold flex items-center gap-2"
+                                    title="Permanently delete student (cannot be undone)"
+                                  >
+                                    <Icons.Trash /> Delete
+                                  </button>
                                 </div>
                               </div>
-                              <button
-                                onClick={() => handleRestore(student.id)}
-                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold"
-                              >
-                                Restore
-                              </button>
                             </div>
                           ))}
                         </div>
@@ -1523,6 +1846,45 @@
                             className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg"
                           />
                         </div>
+                        <div className="md:col-span-3">
+                          <label className="block text-sm font-semibold text-blue-900 mb-2">Photo</label>
+                          <div className="flex gap-4 items-center">
+                            {formData.photo && (
+                              <img src={formData.photo} alt="Current" className="w-24 h-24 object-cover border-4 border-blue-500 rounded-lg" />
+                            )}
+                            <label className="cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center gap-2">
+                              📷 {formData.photo ? 'Change Photo' : 'Upload Photo'}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    if (file.size > 2 * 1024 * 1024) {
+                                      showToast('File Too Large', 'Please select an image under 2MB', 'error');
+                                      return;
+                                    }
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      setFormData({...formData, photo: reader.result});
+                                      showToast('Photo Updated', 'Photo ready to save', 'success');
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+                            {formData.photo && (
+                              <button
+                                onClick={() => setFormData({...formData, photo: ''})}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold"
+                              >
+                                🗑️ Remove
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       <div className="flex gap-3 mt-4">
                         <button
@@ -1594,6 +1956,119 @@
                     </div>
                   </div>
 
+                  {/* NEW: Keyboard Shortcuts Modal */}
+                  {showKeyboardShortcuts && (
+                    <KeyboardShortcutsModal 
+                      show={showKeyboardShortcuts}
+                      onClose={() => setShowKeyboardShortcuts(false)}
+                    />
+                  )}
+                  
+                  {/* NEW: Action Insights Panel */}
+                  <ActionInsightsPanel students={students} />
+
+                  {/* Statistics Dashboard with Hover Details */}
+                  <div className="mb-6 p-6 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 rounded-2xl shadow-2xl">
+                    <h3 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                      📊 Statistics Overview
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+                      {/* Total Students */}
+                      <div className="bg-gradient-to-br from-blue-500 to-blue-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                        <p className="text-xs opacity-90 mb-1">Total Students</p>
+                        <p className="text-3xl font-bold">{students.length}</p>
+                      </div>
+                      
+                      {/* BS Midwifery with Hover Breakdown */}
+                      <div className="relative group">
+                        <div className="bg-gradient-to-br from-green-500 to-green-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                          <p className="text-xs opacity-90 mb-1">BS Midwifery</p>
+                          <p className="text-3xl font-bold">{students.filter(s => s.course === 'BS Midwifery').length}</p>
+                        </div>
+                        {/* Hover Tooltip */}
+                        <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-white rounded-lg shadow-2xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-3 h-3 bg-white"></div>
+                          <p className="font-bold text-green-700 mb-2 text-sm">BS Midwifery by Year</p>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between"><span className="text-gray-700">1st Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Midwifery' && s.year === '1st Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">2nd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Midwifery' && s.year === '2nd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">3rd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Midwifery' && s.year === '3rd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">4th Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Midwifery' && s.year === '4th Year').length}</span></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* BS Radiologic Technology with Hover Breakdown */}
+                      <div className="relative group">
+                        <div className="bg-gradient-to-br from-purple-500 to-purple-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                          <p className="text-xs opacity-90 mb-1">BS Rad Tech</p>
+                          <p className="text-3xl font-bold">{students.filter(s => s.course === 'BS Radiologic Technology').length}</p>
+                        </div>
+                        {/* Hover Tooltip */}
+                        <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-white rounded-lg shadow-2xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-3 h-3 bg-white"></div>
+                          <p className="font-bold text-purple-700 mb-2 text-sm">BS Rad Tech by Year</p>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between"><span className="text-gray-700">1st Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Radiologic Technology' && s.year === '1st Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">2nd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Radiologic Technology' && s.year === '2nd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">3rd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Radiologic Technology' && s.year === '3rd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">4th Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Radiologic Technology' && s.year === '4th Year').length}</span></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* BS Nursing with Hover Breakdown */}
+                      <div className="relative group">
+                        <div className="bg-gradient-to-br from-orange-500 to-orange-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                          <p className="text-xs opacity-90 mb-1">BS Nursing</p>
+                          <p className="text-3xl font-bold">{students.filter(s => s.course === 'BS Nursing').length}</p>
+                        </div>
+                        {/* Hover Tooltip */}
+                        <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-white rounded-lg shadow-2xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-3 h-3 bg-white"></div>
+                          <p className="font-bold text-orange-700 mb-2 text-sm">BS Nursing by Year</p>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between"><span className="text-gray-700">1st Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Nursing' && s.year === '1st Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">2nd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Nursing' && s.year === '2nd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">3rd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Nursing' && s.year === '3rd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">4th Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Nursing' && s.year === '4th Year').length}</span></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* BS Medical Technology with Hover Breakdown */}
+                      <div className="relative group">
+                        <div className="bg-gradient-to-br from-pink-500 to-pink-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                          <p className="text-xs opacity-90 mb-1">BS Med Tech</p>
+                          <p className="text-3xl font-bold">{students.filter(s => s.course === 'BS Medical Technology').length}</p>
+                        </div>
+                        {/* Hover Tooltip */}
+                        <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-white rounded-lg shadow-2xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-3 h-3 bg-white"></div>
+                          <p className="font-bold text-pink-700 mb-2 text-sm">BS Med Tech by Year</p>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between"><span className="text-gray-700">1st Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Medical Technology' && s.year === '1st Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">2nd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Medical Technology' && s.year === '2nd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">3rd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Medical Technology' && s.year === '3rd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">4th Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Medical Technology' && s.year === '4th Year').length}</span></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* With Photos */}
+                      <div className="bg-gradient-to-br from-teal-500 to-teal-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                        <p className="text-xs opacity-90 mb-1">With Photos</p>
+                        <p className="text-3xl font-bold">{students.filter(s => s.photo).length}</p>
+                      </div>
+                      
+                      {/* New This Week */}
+                      <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                        <p className="text-xs opacity-90 mb-1">New This Week</p>
+                        <p className="text-3xl font-bold">{students.filter(s => s.isNew).length}</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="space-y-3">
                     <h3 className="text-xl font-bold text-blue-900">Student Records ({sortedStudents.length})</h3>
                     {sortedStudents.length === 0 ? (
@@ -1607,7 +2082,78 @@
                           key={student.id}
                           className={`p-4 rounded-xl border-2 ${student.isNew ? 'bg-green-50 border-green-500' : 'bg-white border-gray-300'}`}
                         >
-                          <div className="flex justify-between items-start gap-4">
+                          <div className="flex items-start gap-4">
+                            {/* NEW: Selection Checkbox */}
+                            <input
+                              type="checkbox"
+                              checked={selectedStudents.includes(student.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedStudents([...selectedStudents, student.id]);
+                                } else {
+                                  setSelectedStudents(selectedStudents.filter(id => id !== student.id));
+                                }
+                              }}
+                              className="w-5 h-5 mt-2 cursor-pointer"
+                              style={{ accentColor: '#3b82f6' }}
+                            />
+                            
+                            {/* Photo Display on LEFT Side */}
+                            <div className="flex-shrink-0">
+                              {student.photo ? (
+                                <div className="relative group">
+                                  <img 
+                                    src={student.photo} 
+                                    alt={student.name} 
+                                    className="w-32 h-32 object-cover border-4 border-blue-500 rounded-lg shadow-lg hover:shadow-xl transition-all cursor-pointer"
+                                    onClick={async () => {
+                                      try {
+                                        // Create download link
+                                        const link = document.createElement('a');
+                                        link.href = student.photo;
+                                        link.download = `${student.studentNumber}.jpg`;
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                        
+                                        // Also save to server folder
+                                        const response = await fetch('/api/photos/save-single', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            studentNumber: student.studentNumber,
+                                            photo: student.photo
+                                          })
+                                        });
+                                        
+                                        if (response.ok) {
+                                          showToast('Photo Downloaded', `${student.studentNumber}.jpg saved to Downloads and student_photos folder!`, 'success');
+                                        } else {
+                                          showToast('Photo Downloaded', `${student.studentNumber}.jpg saved to Downloads!`, 'success');
+                                        }
+                                      } catch (err) {
+                                        console.error('Download error:', err);
+                                        showToast('Download Started', `${student.studentNumber}.jpg downloading...`, 'info');
+                                      }
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-lg transition-all flex items-center justify-center">
+                                    <span className="text-white opacity-0 group-hover:opacity-100 text-xs font-bold text-center px-2">
+                                      💾 Click to Download
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="w-32 h-32 bg-gray-200 border-4 border-gray-400 rounded-lg flex items-center justify-center">
+                                  <div className="text-center">
+                                    <p className="text-4xl mb-1">📷</p>
+                                    <p className="text-xs text-gray-600 font-semibold">No Photo</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Student Information */}
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <p className="text-xl font-bold text-blue-900">{student.name}</p>
@@ -1626,51 +2172,6 @@
                               <p className="text-xs text-gray-500 mt-2">
                                 📅 Registered: {student.registeredDate} {student.registeredTime && `at ${student.registeredTime}`}
                               </p>
-                            </div>
-                            
-                            {/* Photo Display on Right Side */}
-                            <div className="flex-shrink-0 flex flex-col items-center gap-2">
-                              {student.photo ? (
-                                <>
-                                  <div className="relative group">
-                                    <img 
-                                      src={student.photo} 
-                                      alt={student.name} 
-                                      className="w-32 h-32 object-cover border-4 border-blue-500 rounded-lg shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
-                                      onClick={() => {
-                                        const link = document.createElement('a');
-                                        link.href = student.photo;
-                                        link.download = `${student.studentNumber}.jpg`;
-                                        link.click();
-                                      }}
-                                    />
-                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-lg transition-all flex items-center justify-center">
-                                      <span className="text-white opacity-0 group-hover:opacity-100 text-sm font-bold">
-                                        Click to Download
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <button
-                                    onClick={() => {
-                                      const link = document.createElement('a');
-                                      link.href = student.photo;
-                                      link.download = `${student.studentNumber}.jpg`;
-                                      link.click();
-                                      showToast('Photo Downloaded', `${student.studentNumber}.jpg saved!`, 'success');
-                                    }}
-                                    className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1"
-                                  >
-                                    <Icons.Download /> Download
-                                  </button>
-                                </>
-                              ) : (
-                                <div className="w-32 h-32 bg-gray-200 border-4 border-gray-400 rounded-lg flex items-center justify-center">
-                                  <div className="text-center">
-                                    <p className="text-4xl mb-2">📷</p>
-                                    <p className="text-xs text-gray-600 font-semibold">No Photo</p>
-                                  </div>
-                                </div>
-                              )}
                             </div>
                             
                             {/* Action Buttons */}
@@ -1700,7 +2201,14 @@
                         </div>
                       ))
                     )}
-                  </div>
+                 </div>
+                  
+                  {/* NEW: Bulk Actions Bar */}
+                  <BulkActionsBar
+                    selectedCount={selectedStudents.length}
+                    onAction={handleBulkAction}
+                    onClearSelection={() => setSelectedStudents([])}
+                  />
                 </div>
               </>
             )}
@@ -1708,7 +2216,7 @@
 
           <footer className="bg-blue-900 text-white py-6 mt-12">
             <div className="max-w-7xl mx-auto px-4 text-center">
-              <p className="font-semibold">© 2024 NDHSCCI St. Albert Library System</p>
+              <p className="font-semibold">© 2026 NDHSCCI St. Albert Library System</p>
               <p className="text-sm text-blue-200 mt-2">Student Management System</p>
             </div>
           </footer>
