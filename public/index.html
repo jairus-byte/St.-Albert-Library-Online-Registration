@@ -1,1 +1,2230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NDHSCCI St. Albert Library System</title>
+  
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    body {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #fbbf24 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .notification-enter {
+      animation: slideDown 0.3s ease-out;
+    }
 
+    .photo-upload-box {
+      border: 3px dashed #3b82f6;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .photo-upload-box:hover {
+      border-color: #1e3a8a;
+      background-color: #eff6ff;
+    }
+
+    .photo-upload-box.has-photo {
+      border-style: solid;
+      border-color: #10b981;
+    }
+    
+    /* ========== NEW: PROFESSIONAL UX ANIMATIONS ========== */
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+    }
+    
+    *:focus {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
+    
+    input[type="checkbox"] {
+      cursor: pointer;
+      accent-color: #3b82f6;
+    }
+    
+    kbd {
+      font-family: monospace;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.125rem 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const Icons = {
+      Search: () => <span>🔍</span>,
+      Settings: () => <span>⚙️</span>,
+      LogOut: () => <span>🚪</span>,
+      Edit: () => <span>✏️</span>,
+      Trash: () => <span>🗑️</span>,
+      Download: () => <span>⬇️</span>,
+      Upload: () => <span>⬆️</span>,
+      Check: () => <span>✅</span>,
+      Archive: () => <span>📦</span>,
+      Activity: () => <span>📊</span>,
+      Bell: () => <span>🔔</span>,
+      Home: () => <span>🏠</span>,
+      User: () => <span>👤</span>,
+      Lock: () => <span>🔒</span>,
+      Book: () => <span>📚</span>,
+      Users: () => <span>👥</span>,
+      Clock: () => <span>🕐</span>,
+      Star: () => <span>⭐</span>,
+      Eye: () => <span>👁️</span>,
+      Warning: () => <span>⚠️</span>,
+      Info: () => <span>ℹ️</span>,
+      Success: () => <span>✅</span>,
+      Error: () => <span>❌</span>,
+      Close: () => <span>✖️</span>,
+      Camera: () => <span>📷</span>,
+    };
+
+    function ToastNotification({ notifications, onRemove }) {
+      return (
+        <div className="fixed top-20 right-4 z-50 space-y-3" style={{ maxWidth: '400px' }}>
+          {notifications.map(notif => (
+            <div
+              key={notif.id}
+              className={`notification-enter p-4 rounded-lg shadow-2xl border-2 ${
+                notif.type === 'success' ? 'bg-green-500 border-green-600 text-white' :
+                notif.type === 'error' ? 'bg-red-500 border-red-600 text-white' :
+                notif.type === 'warning' ? 'bg-yellow-500 border-yellow-600 text-white' :
+                'bg-blue-500 border-blue-600 text-white'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">
+                  {notif.type === 'success' && <Icons.Success />}
+                  {notif.type === 'error' && <Icons.Error />}
+                  {notif.type === 'warning' && <Icons.Warning />}
+                  {notif.type === 'info' && <Icons.Info />}
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-lg">{notif.title}</p>
+                  <p className="text-sm opacity-90">{notif.message}</p>
+                </div>
+                <button
+                  onClick={() => onRemove(notif.id)}
+                  className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded"
+                >
+                  <Icons.Close />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+     );
+    }
+
+    // ==================== PROFESSIONAL UX COMPONENTS ====================
+    
+    function KeyboardShortcutsModal({ show, onClose }) {
+      if (!show) return null;
+      
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-bold text-blue-900">⌨️ Keyboard Shortcuts</h2>
+              <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">✖️</button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="border-2 border-gray-200 rounded-lg p-4">
+                <h3 className="font-bold text-lg mb-3 text-blue-700">Navigation</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-600">Search</span><kbd>Ctrl + K</kbd></div>
+                  <div className="flex justify-between"><span className="text-gray-600">Refresh</span><kbd>Ctrl + R</kbd></div>
+                </div>
+              </div>
+              <div className="border-2 border-gray-200 rounded-lg p-4">
+                <h3 className="font-bold text-lg mb-3 text-green-700">Selection</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-600">Select All</span><kbd>Ctrl + A</kbd></div>
+                  <div className="flex justify-between"><span className="text-gray-600">Deselect</span><kbd>Esc</kbd></div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+              <p className="text-sm text-blue-900"><strong>💡 Tip:</strong> Press <kbd>?</kbd> to show this dialog</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    function BulkActionsBar({ selectedCount, onAction, onClearSelection }) {
+      if (selectedCount === 0) return null;
+      
+      return (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40" style={{ animation: 'slideUp 0.3s ease-out' }}>
+          <div className="bg-blue-900 text-white rounded-2xl shadow-2xl p-4 flex items-center gap-4 border-4 border-blue-600">
+            <span className="font-bold text-lg flex items-center gap-2"> 
+              <span className="text-2xl">✓</span>
+              <span>{selectedCount} selected</span>
+            </span>
+            <div className="h-8 w-px bg-blue-600"></div>
+            <button onClick={() => onAction('export')} className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition-colors">
+              📥 Export
+            </button>
+            <button onClick={() => onAction('photos')} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition-colors">
+              📸 Photos
+            </button>
+            <button onClick={onClearSelection} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors">
+              ✖️ Clear
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    function ActionInsightsPanel({ students }) {
+      const missingPhotos = students.filter(s => !s.photo).length;
+      const incomplete = students.filter(s => !s.email || !s.phone || !s.birthday).length;
+      
+      if (missingPhotos === 0 && incomplete === 0) return null;
+      
+      return (
+        <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-400 rounded-xl p-6 shadow-lg">
+          <h3 className="text-xl font-bold text-yellow-800 mb-4 flex items-center gap-2">
+            ⚠️ Attention Needed
+          </h3>
+          <div className="space-y-3">
+            {missingPhotos > 0 && (
+              <div className="flex justify-between items-center bg-white rounded-lg p-3 border-l-4 border-yellow-500">
+                <div>
+                  <p className="font-semibold text-gray-800">📸 {missingPhotos} students missing photos</p>
+                  <p className="text-sm text-gray-600">Photos are required for ID card generation</p>
+                </div>
+              </div>
+            )}
+            {incomplete > 0 && (
+              <div className="flex justify-between items-center bg-white rounded-lg p-3 border-l-4 border-orange-500">
+                <div>
+                  <p className="font-semibold text-gray-800">📝 {incomplete} incomplete registrations</p>
+                  <p className="text-sm text-gray-600">Missing email, phone, or birthday information</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function LibrarySystem() {
+      const [students, setStudents] = useState([]);
+      const [archivedStudents, setArchivedStudents] = useState([]);
+      const [activityLog, setActivityLog] = useState([]);
+      const [toastNotifications, setToastNotifications] = useState([]);
+      const [searchTerm, setSearchTerm] = useState('');
+      const [sortByCourse, setSortByCourse] = useState('');
+      const [sortByYear, setSortByYear] = useState('');
+      const [sortBySection, setSortBySection] = useState('');
+      const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+      const [showSettings, setShowSettings] = useState(false);
+      const [showArchive, setShowArchive] = useState(false);
+      const [showActivityLog, setShowActivityLog] = useState(false);
+      const [editingStudent, setEditingStudent] = useState(null);
+      const [loginUsername, setLoginUsername] = useState('');
+      const [loginPassword, setLoginPassword] = useState('');
+      const [adminCredentials, setAdminCredentials] = useState({ username: 'admin', password: 'admin123' });
+      const [systemLogo, setSystemLogo] = useState('');
+      const [tempLogo, setTempLogo] = useState('');
+      const [newUsername, setNewUsername] = useState('');
+      const [newPassword, setNewPassword] = useState('');
+      const [showSuccessModal, setShowSuccessModal] = useState(false);
+      const [showConfirmModal, setShowConfirmModal] = useState(false);
+      const [showPhotoUploadModal, setShowPhotoUploadModal] = useState(false);
+      const [skipPhotoSecret, setSkipPhotoSecret] = useState('');
+      const [showAdminSkip, setShowAdminSkip] = useState(false);
+      const [longPressTimer, setLongPressTimer] = useState(null);
+      const [registeredStudent, setRegisteredStudent] = useState(null);
+      const [currentView, setCurrentView] = useState('home');
+      const [formData, setFormData] = useState({
+        name: '', course: '', year: '', studentNumber: '', email: '', phone: '', cardExpiry: '', birthday: '', gender: '', section: '', photo: ''
+      });
+      const [formErrors, setFormErrors] = useState({});
+      const [uploadedPhoto, setUploadedPhoto] = useState(''); 
+      const [selectedStudents, setSelectedStudents] = useState([]);
+      const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+
+      useEffect(() => {
+        loadData();
+        const interval = setInterval(loadData, 30000);
+        return () => clearInterval(interval);
+      }, []);
+      
+      useEffect(() => {
+        const handleKeyboard = (e) => {
+          if (e.key === '?' && !e.ctrlKey && !e.altKey) {
+            e.preventDefault();
+            setShowKeyboardShortcuts(true);
+          }
+          if (e.key === 'Escape') {
+            setShowKeyboardShortcuts(false);
+            setSelectedStudents([]);
+          }
+          if (e.ctrlKey && e.key === 'a' && currentView === 'admin') {
+            e.preventDefault();
+            setSelectedStudents(students.map(s => s.id));
+          }
+        };
+        
+        document.addEventListener('keydown', handleKeyboard);
+        return () => document.removeEventListener('keydown', handleKeyboard);
+      }, [currentView, students]);
+
+      const loadData = async () => {
+        try {
+          const res = await fetch('/api/students');
+          const data = await res.json();
+          setStudents(data);
+
+          const archivedRes = await fetch('/api/archived');
+          const archivedData = await archivedRes.json();
+          setArchivedStudents(archivedData);
+
+          const activityRes = await fetch('/api/activity');
+          const activityData = await activityRes.json();
+          setActivityLog(activityData);
+
+          const logoRes = await fetch('/api/settings/system-logo');
+          const logoData = await logoRes.json();
+          if (logoData) setSystemLogo(logoData.value);
+
+          const credRes = await fetch('/api/settings/admin-credentials');
+          const credData = await credRes.json();
+          if (credData) setAdminCredentials(JSON.parse(credData.value));
+        } catch (error) {
+          console.error('Error loading data:', error);
+          showToast('Connection Error', 'Please make sure the server is running', 'error');
+        }
+      };
+
+      const showToast = (title, message, type = 'info') => {
+        const id = Date.now();
+        const newNotif = { id, title, message, type };
+        setToastNotifications(prev => [...prev, newNotif]);
+        
+        setTimeout(() => {
+          removeToast(id);
+        }, 5000);
+      };
+
+      const removeToast = (id) => {
+        setToastNotifications(prev => prev.filter(n => n.id !== id));
+      };
+
+      const addActivity = async (action, details) => {
+        const activity = { action, details, timestamp: new Date().toLocaleString() };
+        try {
+          await fetch('/api/activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(activity)
+          });
+          setActivityLog([activity, ...activityLog]);
+        } catch (error) {
+          console.error('Error adding activity:', error);
+        }
+      };
+
+      // NEW: Bulk Actions Handler
+      const handleBulkAction = async (action) => { 
+        if (selectedStudents.length === 0) {
+          showToast('No Selection', 'Please select students first', 'warning');
+          return;
+        }
+        const handlePhotoUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        if (!file.type.startsWith('image/')) {
+          showToast('Invalid File', 'Please upload an image file (JPG, PNG)', 'error');
+          return;
+        }
+        
+        if (file.size > 2 * 1024 * 1024) {
+          showToast('File Too Large', 'Image size must be less than 2MB', 'error');
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setUploadedPhoto(reader.result);
+          showToast('Photo Selected', 'Photo uploaded successfully!', 'success');
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+      };
+        if (action === 'export') {
+          const selectedData = students.filter(s => selectedStudents.includes(s.id));
+          const headers = ['Name', 'Student Number', 'Course', 'Year', 'Section', 'Gender', 'Email', 'Phone', 'Birthday'];
+          const csv = [
+            headers.join(','),
+            ...selectedData.map(s => [
+              s.name || '',
+              s.studentNumber || '',
+              s.course || '',
+              s.year || '',
+              s.section || '',
+              s.gender || '',
+              s.email || '',
+              s.phone || '',
+              s.birthday || ''
+            ].join(','))
+          ].join('\n');
+          
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `students_export_${new Date().toISOString().split('T')[0]}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          
+          showToast('Export Complete', `Exported ${selectedData.length} students`, 'success');
+          setSelectedStudents([]);
+        }
+        
+        if (action === 'photos') {
+          const withPhotos = students.filter(s => selectedStudents.includes(s.id) && s.photo);
+          if (withPhotos.length === 0) {
+            showToast('No Photos', 'Selected students have no photos', 'warning');
+            return;
+          }
+          
+          showToast('Downloading', `Downloading ${withPhotos.length} photos...`, 'info');
+          
+          withPhotos.forEach((student, index) => {
+            setTimeout(() => {
+              const link = document.createElement('a');
+              link.href = student.photo;
+              link.download = `${student.studentNumber}.jpg`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }, index * 300);
+          });
+          
+          setTimeout(() => {
+            setSelectedStudents([]);
+            showToast('Download Complete', `Downloaded ${withPhotos.length} photos`, 'success');
+          }, withPhotos.length * 300 + 500);
+        }
+      };
+
+      const handlePhotoUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        if (!file.type.startsWith('image/')) {
+          showToast('Invalid File', 'Please upload an image file (JPG, PNG)', 'error');
+          return;
+        }
+        
+        if (file.size > 2 * 1024 * 1024) {
+          showToast('File Too Large', 'Image size must be less than 2MB', 'error');
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setUploadedPhoto(reader.result);
+          showToast('Photo Selected', 'Photo uploaded successfully!', 'success');
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+      };
+
+      const handleConfirmRegistration = () => {
+        const errors = {};
+        
+        if (!formData.name.trim()) errors.name = true;
+        if (!formData.studentNumber.trim()) errors.studentNumber = true;
+        if (!formData.gender) errors.gender = true;
+        if (!formData.year) errors.year = true;
+        if (!formData.course) errors.course = true;
+        if (!formData.section) errors.section = true;
+        
+        if (Object.keys(errors).length > 0) {
+          setFormErrors(errors);
+          showToast('Missing Information', 'Please fill out all required fields marked with *', 'error');
+          return;
+        }
+
+        setFormErrors({});
+        setShowConfirmModal(true);
+      };
+
+      const handleConfirmDetails = () => {
+        setShowConfirmModal(false);
+        setShowPhotoUploadModal(true);
+      };
+
+      const handleSkipPhoto = () => {
+        const SKIP_SECRET = 'admin2025'; // Secret code to skip photo
+        
+        if (skipPhotoSecret === SKIP_SECRET) {
+          setShowPhotoUploadModal(false);
+          setShowAdminSkip(false);
+          handleSubmit();
+        } else {
+          showToast('Invalid Code', 'Incorrect skip code. Photo upload required.', 'error');
+          setSkipPhotoSecret('');
+        }
+      };
+
+      const handleLongPressStart = () => {
+        const timer = setTimeout(() => {
+          setShowAdminSkip(true);
+          showToast('Admin Mode', 'Secret admin skip unlocked! 🔓', 'success');
+          // Vibrate if supported
+          if (navigator.vibrate) {
+            navigator.vibrate(200);
+          }
+        }, 2000); // 2 seconds hold
+        setLongPressTimer(timer);
+      };
+
+      const handleLongPressEnd = () => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          setLongPressTimer(null);
+        }
+      };
+
+      const handleSubmit = async () => {
+        setShowPhotoUploadModal(false);
+
+        const now = new Date();
+        const newStudent = {
+          ...formData,
+          photo: uploadedPhoto || '',
+          cardExpiry: formData.cardExpiry || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          registeredDate: now.toLocaleDateString(),
+          registeredTime: now.toLocaleTimeString(),
+          registeredDateTime: now.toISOString(),
+          isNew: true
+        };
+
+        try {
+          const res = await fetch('/api/students', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newStudent)
+          });
+
+          const data = await res.json();
+
+          if (res.status === 400 && data.error === 'duplicate') {
+            setFormErrors({...formErrors, studentNumber: true});
+            showToast(
+              'Duplicate Student Number',
+              `Student Number "${formData.studentNumber}" is already registered!`,
+              'error'
+            );
+            await addActivity('DUPLICATE_ATTEMPT', `Duplicate: ${formData.studentNumber}`);
+            return;
+          }
+
+          if (!res.ok) {
+            throw new Error('Registration failed');
+          }
+
+          setFormErrors({});
+          
+          // Add activity log
+          await addActivity('NEW_REGISTRATION', `New: ${newStudent.name} (${newStudent.studentNumber}) - ${getCombinedLabel(newStudent.course, newStudent.year, newStudent.section)}`);
+          
+          // Reload data from server to get fresh list
+          await loadData();
+          
+          // Set registered student for success modal
+          setRegisteredStudent({
+            ...newStudent,
+            id: data.id // Get the ID from server response
+          });
+          
+          // Show success modal
+          setShowSuccessModal(true);
+          
+          // Reset form
+          setFormData({ name: '', course: '', year: '', studentNumber: '', email: '', phone: '', cardExpiry: '', birthday: '', gender: '', section: '', photo: '' });
+          setUploadedPhoto('');
+          setSkipPhotoSecret('');
+          setShowAdminSkip(false);
+          
+          // Show success toast
+          showToast('Registration Successful!', `${newStudent.name} has been registered successfully!`, 'success');
+        } catch (error) {
+          console.error('Registration error:', error);
+          showToast('Registration Failed', 'An error occurred. Please try again.', 'error');
+        }
+      };
+
+      const markAsViewed = async (id) => {
+        try {
+          const student = students.find(s => s.id === id);
+          if (student && student.isNew) {
+            const updatedStudent = { ...student, isNew: false };
+            await fetch(`/api/students/${id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updatedStudent)
+            });
+            await loadData();
+            showToast('Marked as Viewed', `${student.name} marked as viewed`, 'info');
+          }
+        } catch (error) {
+          console.error('Error marking as viewed:', error);
+        }
+      };
+
+      const handleDelete = async (id) => {
+        const student = students.find(s => s.id === id);
+        if (!student) return;
+        
+        if (window.confirm(`Are you sure you want to archive ${student.name} (${student.studentNumber})?`)) {
+          try {
+            await fetch(`/api/students/${id}`, { method: 'DELETE' });
+            await loadData();
+            await addActivity('ARCHIVE', `Archived: ${student.name} (${student.studentNumber})`);
+            showToast('Student Archived', `${student.name} has been successfully archived`, 'success');
+          } catch (error) {
+            showToast('Archive Failed', 'Failed to archive student', 'error');
+          }
+        }
+      };
+
+      const handleEdit = (student) => {
+        setEditingStudent(student);
+        setFormData({
+          name: student.name,
+          course: student.course,
+          year: student.year,
+          studentNumber: student.studentNumber,
+          email: student.email || '',
+          phone: student.phone || '',
+          cardExpiry: student.cardExpiry || '',
+          birthday: student.birthday || '',
+          gender: student.gender || '',
+          section: student.section || '',
+          photo: student.photo || ''
+        });
+        setFormErrors({});
+        setCurrentView('admin');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast('Edit Mode', `Editing ${student.name}`, 'info');
+      };
+
+      const handleUpdate = async () => {
+        const errors = {};
+        
+        if (!formData.name.trim()) errors.name = true;
+        if (!formData.studentNumber.trim()) errors.studentNumber = true;
+        if (!formData.gender) errors.gender = true;
+        if (!formData.year) errors.year = true;
+        if (!formData.course) errors.course = true;
+        if (!formData.section) errors.section = true;
+        
+        if (Object.keys(errors).length > 0) {
+          setFormErrors(errors);
+          showToast('Missing Information', 'Please fill out all required fields!', 'error');
+          return;
+        }
+
+        setFormErrors({});
+        
+        try {
+          await fetch(`/api/students/${editingStudent.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({...formData, isNew: false})
+          });
+          
+          await loadData();
+          await addActivity('UPDATE', `Updated: ${formData.name} (${formData.studentNumber})`);
+          setEditingStudent(null);
+          setFormData({ name: '', course: '', year: '', studentNumber: '', email: '', phone: '', cardExpiry: '', birthday: '', gender: '', section: '', photo: '' });
+          showToast('Update Successful', `${formData.name} updated successfully!`, 'success');
+        } catch (error) {
+          showToast('Update Failed', 'Failed to update student', 'error');
+        }
+      };
+
+      const handleRestore = async (id) => {
+        const student = archivedStudents.find(s => s.id === id);
+        if (window.confirm(`Restore ${student.name}?`)) {
+          try {
+            await fetch(`/api/restore/${id}`, { method: 'POST' });
+            await loadData();
+            await addActivity('RESTORE', `Restored: ${student.name}`);
+            showToast('Student Restored', `${student.name} has been restored successfully!`, 'success');
+          } catch (error) {
+            showToast('Restore Failed', 'Failed to restore student', 'error');
+          }
+        }
+      };
+
+      const handlePermanentDelete = async (id, name) => {
+        if (window.confirm(`⚠️ PERMANENTLY DELETE ${name}?\n\nThis action CANNOT be undone!\nAll data including photo will be lost forever.\n\nAre you absolutely sure?`)) {
+          if (window.confirm(`Final confirmation: Delete ${name} permanently?`)) {
+            try {
+              await fetch(`/api/archived/${id}`, { method: 'DELETE' });
+              await loadData();
+              await addActivity('PERMANENT_DELETE', `Permanently deleted: ${name} (ID: ${id})`);
+              showToast('Permanently Deleted', `${name} has been permanently deleted`, 'success');
+            } catch (error) {
+              console.error('Permanent delete error:', error);
+              showToast('Delete Failed', 'Failed to permanently delete student', 'error');
+            }
+          }
+        }
+      };
+
+      const handleAdminLogin = () => {
+        if (loginUsername === adminCredentials.username && loginPassword === adminCredentials.password) {
+          setIsAdminLoggedIn(true);
+          setCurrentView('admin');
+          setLoginUsername('');
+          setLoginPassword('');
+          addActivity('LOGIN', `User ${loginUsername} logged in`);
+          showToast('Login Successful', 'Welcome back, Admin!', 'success');
+        } else {
+          setLoginPassword('');
+          showToast('Login Failed', 'Incorrect username or password', 'error');
+        }
+      };
+
+      const handleAdminLogout = () => {
+        addActivity('LOGOUT', 'User logged out');
+        setIsAdminLoggedIn(false);
+        setCurrentView('home');
+        setShowSettings(false);
+        setShowArchive(false);
+        setShowActivityLog(false);
+        showToast('Logged Out', 'You have been logged out successfully', 'info');
+      };
+
+      const handleUpdateCredentials = async () => {
+        if (!newUsername || !newPassword) {
+          showToast('Invalid Input', 'Please enter both username and password', 'warning');
+          return;
+        }
+        
+        if (newPassword.length < 6) {
+          showToast('Password Too Short', 'Password must be at least 6 characters', 'warning');
+          return;
+        }
+
+        const updatedCredentials = { username: newUsername, password: newPassword };
+        setAdminCredentials(updatedCredentials);
+        
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'admin-credentials', value: JSON.stringify(updatedCredentials) })
+        });
+        
+        await addActivity('CREDENTIALS_UPDATE', 'Admin credentials updated');
+        setNewUsername('');
+        setNewPassword('');
+        showToast('Credentials Updated', 'Admin credentials updated successfully!', 'success');
+      };
+
+      const handleLogoUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        if (!file.type.startsWith('image/')) {
+          showToast('Invalid File', 'Please upload an image file', 'error');
+          return;
+        }
+        
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('File Too Large', 'Image size must be less than 5MB', 'error');
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setTempLogo(reader.result);
+          showToast('Logo Selected', 'Click Save to confirm', 'info');
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+      };
+
+      const handleSaveLogo = async () => {
+        if (!tempLogo) {
+          showToast('No Logo Selected', 'Please select an image first', 'warning');
+          return;
+        }
+        
+        setSystemLogo(tempLogo);
+        
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'system-logo', value: tempLogo })
+        });
+        
+        await addActivity('LOGO_UPDATE', 'System logo updated');
+        setTempLogo('');
+        showToast('Logo Saved', 'System logo saved successfully!', 'success');
+      };
+
+      const handleCancelLogo = () => {
+        setTempLogo('');
+        showToast('Logo Update Cancelled', '', 'info');
+      };
+
+      const handleRemoveLogo = async () => {
+        if (window.confirm('Remove logo?')) {
+          setSystemLogo('');
+          setTempLogo('');
+          
+          await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: 'system-logo', value: '' })
+          });
+          
+          await addActivity('LOGO_REMOVE', 'Logo removed');
+          showToast('Logo Removed', 'System logo removed', 'info');
+        }
+      };
+
+      const exportToExcel = () => {
+        if (students.length === 0) {
+          showToast('No Data', 'No students to export', 'warning');
+          return;
+        }
+
+        const headers = ['Student Number', 'Name', 'Gender', 'Course', 'Year', 'Section', 'Program', 'Email', 'Phone', 'Card Expiry', 'Birthday', 'Registered Date', 'Registered Time'];
+        const rows = students.map(s => [
+          s.studentNumber, 
+          s.name, 
+          s.gender || '', 
+          s.course, 
+          s.year, 
+          s.section || '', 
+          getCombinedLabel(s.course, s.year, s.section),
+          s.email || '', 
+          s.phone || '', 
+          s.cardExpiry || '', 
+          s.birthday || '', 
+          s.registeredDate,
+          s.registeredTime || ''
+        ]);
+        
+        let csv = headers.join(',') + '\n';
+        rows.forEach(row => {
+          csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `library_students_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        addActivity('EXPORT', 'Exported to Excel');
+        showToast('Export Successful', `Exported ${students.length} students to Excel!`, 'success');
+      };
+
+      const downloadAllPhotos = () => {
+        const studentsWithPhotos = students.filter(s => s.photo);
+        
+        if (studentsWithPhotos.length === 0) {
+          showToast('No Photos', 'No student photos available to download', 'warning');
+          return;
+        }
+
+        if (window.confirm(`Download ${studentsWithPhotos.length} student photos? This will download them one by one.`)) {
+          let downloadCount = 0;
+          
+          studentsWithPhotos.forEach((student, index) => {
+            setTimeout(() => {
+              const link = document.createElement('a');
+              link.href = student.photo;
+              link.download = `${student.studentNumber}.jpg`;
+              link.click();
+              downloadCount++;
+              
+              if (downloadCount === studentsWithPhotos.length) {
+                showToast('Download Complete', `Downloaded ${downloadCount} photos!`, 'success');
+                addActivity('DOWNLOAD_PHOTOS', `Downloaded ${downloadCount} student photos`);
+              }
+            }, index * 500); // 500ms delay between downloads
+          });
+          
+          showToast('Download Started', `Downloading ${studentsWithPhotos.length} photos...`, 'info');
+        }
+      };
+
+      const exportAllPhotosToFolder = async () => {
+        const studentsWithPhotos = students.filter(s => s.photo);
+        
+        if (studentsWithPhotos.length === 0) {
+          showToast('No Photos', 'No student photos available to export', 'warning');
+          return;
+        }
+
+        if (window.confirm(`Export ${studentsWithPhotos.length} photos to server folder?\n\nPhotos will be saved as:\n📁 student_photos/BSM26-001.jpg\n📁 student_photos/BSRT26-015.jpg\netc.`)) {
+          try {
+            showToast('Exporting...', 'Saving all photos to folder...', 'info');
+            
+            const response = await fetch('/api/photos/export-all', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+              await addActivity('EXPORT_PHOTOS', `Exported ${result.saved} photos to folder`);
+              showToast('Export Complete!', `✅ ${result.saved} photos saved to student_photos folder!\n\nLocation: ${result.directory}`, 'success');
+              
+              if (result.errors.length > 0) {
+                console.warn('Some photos failed to export:', result.errors);
+                showToast('Partial Success', `${result.saved} saved, ${result.errors.length} failed`, 'warning');
+              }
+            } else {
+              showToast('Export Failed', 'Failed to export photos', 'error');
+            }
+          } catch (error) {
+            console.error('Export error:', error);
+            showToast('Export Failed', 'An error occurred while exporting photos', 'error');
+          }
+        }
+      };
+
+      const getStatistics = () => {
+        const total = students.length;
+        const newToday = students.filter(s => s.isNew).length;
+        const byCourse = {};
+        const byYear = {};
+        const byGender = { Male: 0, Female: 0 };
+        const bySection = { A: 0, B: 0, C: 0, D: 0, E: 0 };
+
+        students.forEach(s => {
+          byCourse[s.course] = (byCourse[s.course] || 0) + 1;
+          byYear[s.year] = (byYear[s.year] || 0) + 1;
+          if (s.gender) byGender[s.gender]++;
+          if (s.section) bySection[s.section]++;
+        });
+
+        return { total, newToday, byCourse, byYear, byGender, bySection };
+      };
+
+      const getCourseAbbreviation = (course) => {
+        const abbreviations = {
+          'BS Midwifery': 'BSM',
+          'BS in Radiologic Technology': 'BSRT',
+          'BS in Nursing': 'BSN',
+          'BS in Medical Technology': 'BSMT'
+        };
+        return abbreviations[course] || course;
+      };
+
+      const getYearNumber = (year) => {
+        const yearNumbers = {
+          '1st Year': '1',
+          '2nd Year': '2',
+          '3rd Year': '3',
+          '4th Year': '4',
+          '5th Year': '5'
+        };
+        return yearNumbers[year] || year;
+      };
+
+      const getCombinedLabel = (course, year, section) => {
+        const abbr = getCourseAbbreviation(course);
+        const yearNum = getYearNumber(year);
+        return `${abbr} ${yearNum}-${section || '?'}`;
+      };
+
+      const filteredStudents = students.filter(student => {
+        const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          student.studentNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          student.course.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCourse = sortByCourse === '' || student.course === sortByCourse;
+        const matchesYear = sortByYear === '' || student.year === sortByYear;
+        const matchesSection = sortBySection === '' || student.section === sortBySection;
+        return matchesSearch && matchesCourse && matchesYear && matchesSection;
+      });
+
+      const sortedStudents = [...filteredStudents].sort((a, b) => {
+        if (a.isNew && !b.isNew) return -1;
+        if (!a.isNew && b.isNew) return 1;
+        
+        if (a.registeredDateTime && b.registeredDateTime) {
+          return new Date(b.registeredDateTime) - new Date(a.registeredDateTime);
+        }
+        
+        if (a.course !== b.course) return a.course.localeCompare(b.course);
+        const yearOrder = { '1st Year': 1, '2nd Year': 2, '3rd Year': 3, '4th Year': 4, '5th Year': 5 };
+        return (yearOrder[a.year] || 0) - (yearOrder[b.year] || 0);
+      });
+
+      const stats = getStatistics();
+
+      return (
+        <div className="min-h-screen">
+          <ToastNotification notifications={toastNotifications} onRemove={removeToast} />
+          
+          {showConfirmModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border-4 border-yellow-500">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">⚠️</div>
+                  <h2 className="text-3xl font-bold text-yellow-600 mb-4">Confirm Registration</h2>
+                  <div className="bg-yellow-50 p-6 rounded-lg mb-6 text-left border-2 border-yellow-300">
+                    <p className="text-lg font-semibold text-gray-800 mb-3">Please verify your information:</p>
+                    
+                    <div className="space-y-2 text-gray-700">
+                      <p><strong>Name:</strong> {formData.name}</p>
+                      <p><strong>Student Number:</strong> {formData.studentNumber}</p>
+                      <p><strong>Gender:</strong> {formData.gender}</p>
+                      <p><strong>Course:</strong> {formData.course}</p>
+                      <p><strong>Year:</strong> {formData.year}</p>
+                      <p><strong>Section:</strong> {formData.section}</p>
+                      <p><strong>Program:</strong> {getCombinedLabel(formData.course, formData.year, formData.section)}</p>
+                      {formData.email && <p><strong>Email:</strong> {formData.email}</p>}
+                      {formData.phone && <p><strong>Phone:</strong> {formData.phone}</p>}
+                      {formData.birthday && <p><strong>Birthday:</strong> {formData.birthday}</p>}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setShowConfirmModal(false)}
+                      className="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-bold"
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button
+                      onClick={handleConfirmDetails}
+                      className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-lg font-bold"
+                    >
+                      ✅ Confirm & Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showPhotoUploadModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl shadow-2xl p-8 max-w-lg w-full border-4 border-blue-500">
+                <div className="text-center">
+                  <div className="text-7xl mb-4 animate-bounce">📸</div>
+                  <h2 className="text-3xl font-bold text-blue-900 mb-2">Upload Your 2x2 ID Photo</h2>
+                  <p className="text-gray-600 mb-2">
+                    Please upload a clear photo of yourself (
+                    <span 
+                      className="text-red-600 font-bold cursor-pointer select-none"
+                      onMouseDown={handleLongPressStart}
+                      onMouseUp={handleLongPressEnd}
+                      onMouseLeave={handleLongPressEnd}
+                      onTouchStart={handleLongPressStart}
+                      onTouchEnd={handleLongPressEnd}
+                      onTouchCancel={handleLongPressEnd}
+                      title="Hold for 2 seconds..."
+                    >
+                      Required
+                    </span>
+                    )
+                  </p>
+                  {showAdminSkip && (
+                    <div className="mb-4 p-2 bg-yellow-100 border-2 border-yellow-400 rounded-lg animate-pulse">
+                      <p className="text-xs text-yellow-800 font-bold">🔓 Admin Skip Mode Activated</p>
+                    </div>
+                  )}
+                  
+                  <div className={`photo-upload-box mb-6 ${uploadedPhoto ? 'has-photo' : ''}`}>
+                    {uploadedPhoto ? (
+                      <div className="space-y-3">
+                        <img src={uploadedPhoto} alt="Preview" className="w-48 h-48 mx-auto object-cover border-4 border-green-500 rounded-lg shadow-lg" />
+                        <p className="text-green-700 font-bold flex items-center justify-center gap-2 text-lg">
+                          <Icons.Check /> Photo Uploaded Successfully!
+                        </p>
+                        <label className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl cursor-pointer font-semibold text-lg shadow-lg">
+                          <Icons.Camera /> Change Photo
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePhotoUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <label className="cursor-pointer block">
+                        <div className="text-8xl mb-4"><Icons.Camera /></div>
+                        <p className="text-2xl font-bold text-blue-900 mb-3">Click to Upload Photo</p>
+                        <p className="text-sm text-gray-600 mb-4">JPG or PNG • Max 2MB • 2x2 size recommended</p>
+                        <span className="inline-block px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-bold text-lg shadow-xl">
+                          <Icons.Upload /> Select Photo
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  {uploadedPhoto && (
+                    <button
+                      onClick={handleSubmit}
+                      className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 rounded-xl font-bold text-lg shadow-lg mb-3"
+                    >
+                      ✅ Complete Registration
+                    </button>
+                  )}
+
+                  {showAdminSkip && (
+                    <div className="border-t-2 border-gray-300 pt-4 mt-4">
+                      <p className="text-xs text-gray-500 mb-2">🔒 Admin Only - Skip Photo Upload</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="password"
+                          placeholder="Enter admin code"
+                          value={skipPhotoSecret}
+                          onChange={(e) => setSkipPhotoSecret(e.target.value)}
+                          className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg text-sm"
+                          onKeyPress={(e) => e.key === 'Enter' && handleSkipPhoto()}
+                        />
+                        <button
+                          onClick={handleSkipPhoto}
+                          className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold text-sm"
+                        >
+                          Skip
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-2 italic">Only authorized administrators can skip photo upload</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showSuccessModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border-4 border-green-500">
+                <div className="text-center">
+                  <div className="text-6xl mb-4"><Icons.Check /></div>
+                  <h2 className="text-3xl font-bold text-green-600 mb-4">Registration Successful!</h2>
+                  <div className="bg-green-50 p-6 rounded-lg mb-6 text-left border-2 border-green-200">
+                    <p className="text-lg font-semibold text-gray-800 mb-3">Welcome to the Library!</p>
+                    
+                    {registeredStudent?.photo && (
+                      <div className="mb-4 flex justify-center">
+                        <img 
+                          src={registeredStudent.photo} 
+                          alt={registeredStudent.name} 
+                          className="w-32 h-32 object-cover border-4 border-green-500 rounded-lg shadow-lg" 
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="space-y-2 text-gray-700">
+                      <p><strong>Name:</strong> {registeredStudent?.name || 'N/A'}</p>
+                      <p><strong>Student Number:</strong> {registeredStudent?.studentNumber || 'N/A'}</p>
+                      <p><strong>Gender:</strong> {registeredStudent?.gender || 'N/A'}</p>
+                      <p><strong>Program:</strong> {registeredStudent && registeredStudent.course ? getCombinedLabel(registeredStudent.course, registeredStudent.year, registeredStudent.section) : 'N/A'}</p>
+                      {registeredStudent?.email && <p><strong>Email:</strong> {registeredStudent.email}</p>}
+                      {registeredStudent?.phone && <p><strong>Phone:</strong> {registeredStudent.phone}</p>}
+                      {registeredStudent?.birthday && <p><strong>Birthday:</strong> {registeredStudent.birthday}</p>}
+                      <p><strong>Date:</strong> {registeredStudent?.registeredDate || 'N/A'}</p>
+                      <p><strong>Time:</strong> {registeredStudent?.registeredTime || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowSuccessModal(false)}
+                    className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 rounded-lg font-bold"
+                  >
+                    Got it, Thanks!
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <nav className="bg-blue-900 text-white shadow-lg sticky top-0 z-40">
+            <div className="max-w-7xl mx-auto px-4 py-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  {systemLogo ? (
+                    <img src={systemLogo} alt="Logo" className="w-12 h-12 object-contain bg-white rounded-full p-1" />
+                  ) : (
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+                      <Icons.Book />
+                    </div>
+                  )}
+                  <div>
+                    <h1 className="text-xl font-bold">NDHSCCI St. Albert Library</h1>
+                    <p className="text-xs text-blue-200">Student Management System</p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentView('home')}
+                    className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 ${currentView === 'home' ? 'bg-white text-blue-900' : 'bg-blue-800 hover:bg-blue-700'}`}
+                  >
+                    <Icons.Home /> Home
+                  </button>
+                  {!isAdminLoggedIn ? (
+                    <button
+                      onClick={() => setCurrentView('login')}
+                      className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 ${currentView === 'login' ? 'bg-white text-blue-900' : 'bg-blue-800 hover:bg-blue-700'}`}
+                    >
+                      <Icons.User /> Admin
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setCurrentView('admin')}
+                        className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 ${currentView === 'admin' ? 'bg-white text-blue-900' : 'bg-blue-800 hover:bg-blue-700'}`}
+                      >
+                        <Icons.User /> Panel
+                      </button>
+                      <button
+                        onClick={handleAdminLogout}
+                        className="px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg font-semibold flex items-center gap-2"
+                      >
+                        <Icons.LogOut /> Logout
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </nav>
+
+          <div className="max-w-7xl mx-auto p-4 md:p-6">
+            {currentView === 'home' && (
+              <div className="bg-white rounded-2xl shadow-2xl p-6 mb-6 border-4 border-blue-900 mt-8">
+                <div className="text-center mb-8">
+                  <h2 className="text-4xl font-bold text-blue-900 mb-2">Student Online Registration</h2>
+                  <p className="text-yellow-600 text-xl font-semibold">Register for Library Access</p>
+                </div>
+
+                <div className="bg-blue-50 p-4 rounded-lg mb-6 border-2 border-blue-200">
+                  <p className="text-sm text-gray-700">
+                    <strong>📌 Important:</strong> Please fill out all required fields marked with (*). You will upload your 2x2 ID photo in the next step.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-blue-900 mb-2">
+                      Name * {formErrors.name && <span className="text-red-600">← Required</span>}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => {
+                        setFormData({...formData, name: e.target.value.toUpperCase()});
+                        if (formErrors.name) setFormErrors({...formErrors, name: false});
+                      }}
+                      className={`w-full px-4 py-3 border-2 ${formErrors.name ? 'border-red-500 bg-red-50' : 'border-blue-300'} rounded-lg uppercase`}
+                      placeholder="JUAN DELA CRUZ"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-blue-900 mb-2">
+                      Student Number * {formErrors.studentNumber && <span className="text-red-600">← Required</span>}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.studentNumber}
+                      onChange={(e) => {
+                        setFormData({...formData, studentNumber: e.target.value.toUpperCase()});
+                        if (formErrors.studentNumber) setFormErrors({...formErrors, studentNumber: false});
+                      }}
+                      className={`w-full px-4 py-3 border-2 ${formErrors.studentNumber ? 'border-red-500 bg-red-50' : 'border-blue-300'} rounded-lg uppercase`}
+                      placeholder="BSM26-001"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-blue-900 mb-2">
+                      Gender * {formErrors.gender && <span className="text-red-600">← Required</span>}
+                    </label>
+                    <select
+                      value={formData.gender}
+                      onChange={(e) => {
+                        setFormData({...formData, gender: e.target.value});
+                        if (formErrors.gender) setFormErrors({...formErrors, gender: false});
+                      }}
+                      className={`w-full px-4 py-3 border-2 ${formErrors.gender ? 'border-red-500 bg-red-50' : 'border-blue-300'} rounded-lg`}
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-blue-900 mb-2">
+                      Course * {formErrors.course && <span className="text-red-600">← Required</span>}
+                    </label>
+                    <select
+                      value={formData.course}
+                      onChange={(e) => {
+                        setFormData({...formData, course: e.target.value});
+                        if (formErrors.course) setFormErrors({...formErrors, course: false});
+                      }}
+                      className={`w-full px-4 py-3 border-2 ${formErrors.course ? 'border-red-500 bg-red-50' : 'border-blue-300'} rounded-lg`}
+                    >
+                      <option value="">Select Course</option>
+                      <option value="BS Midwifery">BS Midwifery</option>
+                      <option value="BS in Radiologic Technology">BS in Radiologic Technology</option>
+                      <option value="BS in Nursing">BS in Nursing</option>
+                      <option value="BS in Medical Technology">BS in Medical Technology</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-blue-900 mb-2">
+                      Year * {formErrors.year && <span className="text-red-600">← Required</span>}
+                    </label>
+                    <select
+                      value={formData.year}
+                      onChange={(e) => {
+                        setFormData({...formData, year: e.target.value});
+                        if (formErrors.year) setFormErrors({...formErrors, year: false});
+                      }}
+                      className={`w-full px-4 py-3 border-2 ${formErrors.year ? 'border-red-500 bg-red-50' : 'border-blue-300'} rounded-lg`}
+                    >
+                      <option value="">Select Year</option>
+                      <option value="1st Year">1st Year</option>
+                      <option value="2nd Year">2nd Year</option>
+                      <option value="3rd Year">3rd Year</option>
+                      <option value="4th Year">4th Year</option>
+                      <option value="5th Year">5th Year</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-blue-900 mb-2">
+                      Section * {formErrors.section && <span className="text-red-600">← Required</span>}
+                    </label>
+                    <select
+                      value={formData.section}
+                      onChange={(e) => {
+                        setFormData({...formData, section: e.target.value});
+                        if (formErrors.section) setFormErrors({...formErrors, section: false});
+                      }}
+                      className={`w-full px-4 py-3 border-2 ${formErrors.section ? 'border-red-500 bg-red-50' : 'border-blue-300'} rounded-lg`}
+                    >
+                      <option value="">Select Section</option>
+                      <option value="A">Section A</option>
+                      <option value="B">Section B</option>
+                      <option value="C">Section C</option>
+                      <option value="D">Section D</option>
+                      <option value="E">Section E</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-blue-900 mb-2">Email (Optional)</label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg"
+                      placeholder="email@example.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-blue-900 mb-2">Phone</label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg"
+                      placeholder="09123456789"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-blue-900 mb-2">Birthday</label>
+                    <input
+                      type="date"
+                      value={formData.birthday}
+                      onChange={(e) => setFormData({...formData, birthday: e.target.value})}
+                      className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <button
+                      onClick={handleConfirmRegistration}
+                      className="w-full bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white py-4 rounded-lg font-bold shadow-lg transition-all transform hover:scale-105 text-lg"
+                    >
+                      ➕ Register for Library Access
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-blue-900 to-blue-700 rounded-2xl p-4 md:p-8 text-white mt-6 shadow-xl">
+                  <h3 className="text-2xl md:text-3xl font-bold mb-6 flex items-center gap-2">
+                    📚 Library Hours & Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                    <div className="bg-white bg-opacity-10 rounded-xl p-4 md:p-6 backdrop-blur-sm">
+                      <h4 className="font-bold text-lg md:text-xl mb-3 md:mb-4 text-yellow-300 flex items-center gap-2">
+                        🕐 Operating Hours:
+                      </h4>
+                      <div className="space-y-2 text-sm md:text-base">
+                        <p className="flex items-start gap-2">
+                          <span className="font-semibold min-w-[80px] md:min-w-[100px]">Monday - Friday:</span>
+                          <span>8:00 AM - 5:00 PM</span>
+                        </p>
+                        <p className="flex items-start gap-2">
+                          <span className="font-semibold min-w-[80px] md:min-w-[100px]">Saturday:</span>
+                          <span>8:00 AM - 12:00 PM</span>
+                        </p>
+                        <p className="flex items-start gap-2">
+                          <span className="font-semibold min-w-[80px] md:min-w-[100px]">Sunday:</span>
+                          <span>Closed</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="bg-white bg-opacity-10 rounded-xl p-4 md:p-6 backdrop-blur-sm">
+                      <h4 className="font-bold text-lg md:text-xl mb-3 md:mb-4 text-yellow-300 flex items-center gap-2">
+                        📋 Requirements:
+                      </h4>
+                      <div className="space-y-2 text-sm md:text-base">
+                        <p className="flex items-start gap-2">
+                          <span>✓</span>
+                          <span>Valid Student Number</span>
+                        </p>
+                        <p className="flex items-start gap-2">
+                          <span>✓</span>
+                          <span>Complete Registration Form</span>
+                        </p>
+                        <p className="flex items-start gap-2">
+                          <span>✓</span>
+                          <span>2x2 ID Photo</span>
+                        </p>
+                        <p className="flex items-start gap-2">
+                          <span>✓</span>
+                          <span>Current Enrollment Status</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {currentView === 'login' && !isAdminLoggedIn && (
+              <div className="max-w-md mx-auto mt-12">
+                <div className="bg-white rounded-2xl shadow-2xl p-8 border-4 border-blue-900">
+                  <div className="flex items-center justify-center gap-3 mb-6">
+                    <span className="text-5xl"><Icons.Lock /></span>
+                    <h2 className="text-3xl font-bold text-blue-900">Admin Login</h2>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-blue-900 mb-2">Username</label>
+                      <input
+                        type="text"
+                        value={loginUsername}
+                        onChange={(e) => setLoginUsername(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg"
+                        placeholder="Enter username"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-blue-900 mb-2">Password</label>
+                      <input
+                        type="password"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
+                        className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg"
+                        placeholder="Enter password"
+                      />
+                    </div>
+                    <button
+                      onClick={handleAdminLogin}
+                      className="w-full bg-gradient-to-r from-blue-900 to-blue-700 text-white py-3 rounded-lg font-bold"
+                    >
+                      🔓 Login
+                    </button>
+                    <p className="text-center text-sm text-gray-600 mt-4">
+                     
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {currentView === 'admin' && isAdminLoggedIn && (
+              <>
+                <div className="bg-white rounded-2xl shadow-2xl p-6 border-4 border-blue-900 mt-8">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-3xl font-bold text-blue-900">Admin Panel</h2>
+                    <div className="flex gap-2 flex-wrap">
+                      {/* NEW: Help Button */}
+                      <button
+                        onClick={() => setShowKeyboardShortcuts(true)}
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold flex items-center gap-2"
+                        title="Keyboard Shortcuts (Press ?)"
+                      >
+                        ⌨️ Help
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await loadData();
+                          showToast('Data Refreshed', 'Student records updated!', 'success');
+                        }}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center gap-2"
+                        title="Refresh student list"
+                      >
+                        🔄 Refresh
+                      </button>
+                      <button
+                        onClick={() => setShowSettings(!showSettings)}
+                        className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 ${showSettings ? 'bg-blue-900 text-white' : 'bg-blue-100 text-blue-900 hover:bg-blue-200'}`}
+                      >
+                        <Icons.Settings /> Settings
+                      </button>
+                      <button
+                        onClick={() => setShowArchive(!showArchive)}
+                        className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 ${showArchive ? 'bg-blue-900 text-white' : 'bg-blue-100 text-blue-900 hover:bg-blue-200'}`}
+                      >
+                        <Icons.Archive /> Archive ({archivedStudents.length})
+                      </button>
+                      <button
+                        onClick={() => setShowActivityLog(!showActivityLog)}
+                        className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 ${showActivityLog ? 'bg-blue-900 text-white' : 'bg-blue-100 text-blue-900 hover:bg-blue-200'}`}
+                      >
+                        <Icons.Activity /> Activity
+                      </button>
+                      <button
+                        onClick={exportAllPhotosToFolder}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold flex items-center gap-2"
+                        title="Export all photos to student_photos folder"
+                      >
+                        📁 Export Photos
+                      </button>
+                      <button
+                        onClick={exportToExcel}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center gap-2"
+                      >
+                        <Icons.Download /> Export CSV
+                      </button>
+                    </div>
+                  </div>
+
+                  {showSettings && (
+                    <div className="bg-gray-50 border-2 border-gray-300 rounded-xl p-6 mb-6">
+                      <h3 className="text-2xl font-bold text-blue-900 mb-4">⚙️ System Settings</h3>
+                      
+                      <div className="mb-6">
+                        <h4 className="font-semibold text-lg text-blue-900 mb-3">System Logo</h4>
+                        <div className="flex items-center gap-4">
+                          {(systemLogo || tempLogo) && (
+                            <img src={tempLogo || systemLogo} alt="Logo" className="w-24 h-24 object-contain border-2 border-blue-300 rounded-lg bg-white p-2" />
+                          )}
+                          <div className="flex-1">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleLogoUpload}
+                              className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-900 file:text-white hover:file:bg-blue-800"
+                            />
+                            {tempLogo && (
+                              <div className="flex gap-2 mt-2">
+                                <button onClick={handleSaveLogo} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold">
+                                  Save Logo
+                                </button>
+                                <button onClick={handleCancelLogo} className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-semibold">
+                                  Cancel
+                                </button>
+                              </div>
+                            )}
+                            {systemLogo && !tempLogo && (
+                              <button onClick={handleRemoveLogo} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold mt-2">
+                                Remove Logo
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold text-lg text-blue-900 mb-3">Admin Credentials</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <input
+                            type="text"
+                            placeholder="New Username"
+                            value={newUsername}
+                            onChange={(e) => setNewUsername(e.target.value)}
+                            className="px-4 py-3 border-2 border-blue-300 rounded-lg"
+                          />
+                          <input
+                            type="password"
+                            placeholder="New Password (min 6 chars)"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="px-4 py-3 border-2 border-blue-300 rounded-lg"
+                          />
+                        </div>
+                        <button
+                          onClick={handleUpdateCredentials}
+                          className="mt-3 px-6 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg font-semibold"
+                        >
+                          Update Credentials
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {showArchive && (
+                    <div className="bg-gray-50 border-2 border-gray-300 rounded-xl p-6 mb-6">
+                      <h3 className="text-2xl font-bold text-blue-900 mb-4">📦 Archived Students ({archivedStudents.length})</h3>
+                      {archivedStudents.length === 0 ? (
+                        <p className="text-gray-600 text-center py-8">No archived students</p>
+                      ) : (
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                          {archivedStudents.map(student => (
+                            <div key={student.id} className="bg-white p-4 rounded-lg border-2 border-gray-300">
+                              <div className="flex items-center gap-4">
+                                {/* Photo on LEFT */}
+                                <div className="flex-shrink-0">
+                                  {student.photo ? (
+                                    <img 
+                                      src={student.photo} 
+                                      alt={student.name} 
+                                      className="w-20 h-20 object-cover border-2 border-gray-400 rounded-lg cursor-pointer hover:shadow-lg transition-shadow"
+                                      onClick={() => {
+                                        const link = document.createElement('a');
+                                        link.href = student.photo;
+                                        link.download = `${student.studentNumber}_archived.jpg`;
+                                        link.click();
+                                        showToast('Photo Downloaded', `${student.studentNumber} photo saved!`, 'success');
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="w-20 h-20 bg-gray-200 border-2 border-gray-400 rounded-lg flex items-center justify-center">
+                                      <span className="text-2xl">📷</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Student Info */}
+                                <div className="flex-1">
+                                  <p className="font-bold text-lg text-gray-800">{student.name}</p>
+                                  <p className="text-sm text-gray-600">{student.studentNumber} - {getCombinedLabel(student.course, student.year, student.section)}</p>
+                                  {student.archivedDate && (
+                                    <p className="text-xs text-gray-500 mt-1">🗑️ Archived: {student.archivedDate} {student.archivedTime && `at ${student.archivedTime}`}</p>
+                                  )}
+                                </div>
+                                
+                                {/* Action Buttons */}
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleRestore(student.id)}
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center gap-2"
+                                    title="Restore student to active list"
+                                  >
+                                    ♻️ Restore
+                                  </button>
+                                  <button
+                                    onClick={() => handlePermanentDelete(student.id, student.name)}
+                                    className="px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded-lg font-semibold flex items-center gap-2"
+                                    title="Permanently delete student (cannot be undone)"
+                                  >
+                                    <Icons.Trash /> Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {showActivityLog && (
+                    <div className="bg-gray-50 border-2 border-gray-300 rounded-xl p-6 mb-6">
+                      <h3 className="text-2xl font-bold text-blue-900 mb-4">📊 Activity Log</h3>
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {activityLog.length === 0 ? (
+                          <p className="text-gray-600 text-center py-8">No activity yet</p>
+                        ) : (
+                          activityLog.map((log, idx) => (
+                            <div key={idx} className="bg-white p-3 rounded-lg border border-gray-300">
+                              <p className="text-sm font-semibold text-blue-900">{log.action}</p>
+                              <p className="text-xs text-gray-600">{log.details}</p>
+                              <p className="text-xs text-gray-500 mt-1">{log.timestamp}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-700 text-white p-4 rounded-xl">
+                      <p className="text-sm opacity-90">Total Students</p>
+                      <p className="text-3xl font-bold">{stats.total}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-500 to-green-700 text-white p-4 rounded-xl">
+                      <p className="text-sm opacity-90">New Today</p>
+                      <p className="text-3xl font-bold">{stats.newToday}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-500 to-purple-700 text-white p-4 rounded-xl">
+                      <p className="text-sm opacity-90">Male</p>
+                      <p className="text-3xl font-bold">{stats.byGender.Male}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-pink-500 to-pink-700 text-white p-4 rounded-xl">
+                      <p className="text-sm opacity-90">Female</p>
+                      <p className="text-3xl font-bold">{stats.byGender.Female}</p>
+                    </div>
+                  </div>
+
+                  {editingStudent && (
+                    <div className="bg-yellow-50 border-4 border-yellow-500 rounded-xl p-6 mb-6">
+                      <h3 className="text-2xl font-bold text-yellow-700 mb-4">✏️ Editing: {editingStudent.name}</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-blue-900 mb-2">Name *</label>
+                          <input
+                            type="text"
+                            value={formData.name}
+                            onChange={(e) => setFormData({...formData, name: e.target.value.toUpperCase()})}
+                            className={`w-full px-4 py-3 border-2 ${formErrors.name ? 'border-red-500' : 'border-blue-300'} rounded-lg uppercase`}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-blue-900 mb-2">Student Number *</label>
+                          <input
+                            type="text"
+                            value={formData.studentNumber}
+                            onChange={(e) => setFormData({...formData, studentNumber: e.target.value.toUpperCase()})}
+                            className={`w-full px-4 py-3 border-2 ${formErrors.studentNumber ? 'border-red-500' : 'border-blue-300'} rounded-lg uppercase`}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-blue-900 mb-2">Gender *</label>
+                          <select
+                            value={formData.gender}
+                            onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                            className={`w-full px-4 py-3 border-2 ${formErrors.gender ? 'border-red-500' : 'border-blue-300'} rounded-lg`}
+                          >
+                            <option value="">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-blue-900 mb-2">Course *</label>
+                          <select
+                            value={formData.course}
+                            onChange={(e) => setFormData({...formData, course: e.target.value})}
+                            className={`w-full px-4 py-3 border-2 ${formErrors.course ? 'border-red-500' : 'border-blue-300'} rounded-lg`}
+                          >
+                            <option value="">Select</option>
+                            <option value="BS Midwifery">BS Midwifery</option>
+                            <option value="BS in Radiologic Technology">BS in Radiologic Technology</option>
+                            <option value="BS in Nursing">BS in Nursing</option>
+                            <option value="BS in Medical Technology">BS in Medical Technology</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-blue-900 mb-2">Year *</label>
+                          <select
+                            value={formData.year}
+                            onChange={(e) => setFormData({...formData, year: e.target.value})}
+                            className={`w-full px-4 py-3 border-2 ${formErrors.year ? 'border-red-500' : 'border-blue-300'} rounded-lg`}
+                          >
+                            <option value="">Select</option>
+                            <option value="1st Year">1st Year</option>
+                            <option value="2nd Year">2nd Year</option>
+                            <option value="3rd Year">3rd Year</option>
+                            <option value="4th Year">4th Year</option>
+                            <option value="5th Year">5th Year</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-blue-900 mb-2">Section *</label>
+                          <select
+                            value={formData.section}
+                            onChange={(e) => setFormData({...formData, section: e.target.value})}
+                            className={`w-full px-4 py-3 border-2 ${formErrors.section ? 'border-red-500' : 'border-blue-300'} rounded-lg`}
+                          >
+                            <option value="">Select</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="E">E</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-blue-900 mb-2">Email</label>
+                          <input
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                            className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-blue-900 mb-2">Phone</label>
+                          <input
+                            type="tel"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                            className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-blue-900 mb-2">Birthday</label>
+                          <input
+                            type="date"
+                            value={formData.birthday}
+                            onChange={(e) => setFormData({...formData, birthday: e.target.value})}
+                            className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg"
+                          />
+                        </div>
+                        <div className="md:col-span-3">
+                          <label className="block text-sm font-semibold text-blue-900 mb-2">Photo</label>
+                          <div className="flex gap-4 items-center">
+                            {formData.photo && (
+                              <img src={formData.photo} alt="Current" className="w-24 h-24 object-cover border-4 border-blue-500 rounded-lg" />
+                            )}
+                            <label className="cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center gap-2">
+                              📷 {formData.photo ? 'Change Photo' : 'Upload Photo'}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    if (file.size > 2 * 1024 * 1024) {
+                                      showToast('File Too Large', 'Please select an image under 2MB', 'error');
+                                      return;
+                                    }
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      setFormData({...formData, photo: reader.result});
+                                      showToast('Photo Updated', 'Photo ready to save', 'success');
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+                            {formData.photo && (
+                              <button
+                                onClick={() => setFormData({...formData, photo: ''})}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold"
+                              >
+                                🗑️ Remove
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-3 mt-4">
+                        <button
+                          onClick={handleUpdate}
+                          className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold"
+                        >
+                          💾 Save Changes
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingStudent(null);
+                            setFormData({ name: '', course: '', year: '', studentNumber: '', email: '', phone: '', cardExpiry: '', birthday: '', gender: '', section: '', photo: '' });
+                            setFormErrors({});
+                          }}
+                          className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-bold"
+                        >
+                          ❌ Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mb-6">
+                    <div className="flex flex-wrap gap-3 mb-4">
+                      <div className="flex-1 min-w-[200px]">
+                        <input
+                          type="text"
+                          placeholder="🔍 Search by name, student number, or course..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg"
+                        />
+                      </div>
+                      <select
+                        value={sortByCourse}
+                        onChange={(e) => setSortByCourse(e.target.value)}
+                        className="px-4 py-3 border-2 border-blue-300 rounded-lg"
+                      >
+                        <option value="">All Courses</option>
+                        <option value="BS Midwifery">BS Midwifery</option>
+                        <option value="BS in Radiologic Technology">BS in Radiologic Technology</option>
+                        <option value="BS in Nursing">BS in Nursing</option>
+                        <option value="BS in Medical Technology">BS in Medical Technology</option>
+                      </select>
+                      <select
+                        value={sortByYear}
+                        onChange={(e) => setSortByYear(e.target.value)}
+                        className="px-4 py-3 border-2 border-blue-300 rounded-lg"
+                      >
+                        <option value="">All Years</option>
+                        <option value="1st Year">1st Year</option>
+                        <option value="2nd Year">2nd Year</option>
+                        <option value="3rd Year">3rd Year</option>
+                        <option value="4th Year">4th Year</option>
+                        <option value="5th Year">5th Year</option>
+                      </select>
+                      <select
+                        value={sortBySection}
+                        onChange={(e) => setSortBySection(e.target.value)}
+                        className="px-4 py-3 border-2 border-blue-300 rounded-lg"
+                      >
+                        <option value="">All Sections</option>
+                        <option value="A">Section A</option>
+                        <option value="B">Section B</option>
+                        <option value="C">Section C</option>
+                        <option value="D">Section D</option>
+                        <option value="E">Section E</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* NEW: Keyboard Shortcuts Modal */}
+                  {showKeyboardShortcuts && (
+                    <KeyboardShortcutsModal 
+                      show={showKeyboardShortcuts}
+                      onClose={() => setShowKeyboardShortcuts(false)}
+                    />
+                  )}
+                  
+                  {/* NEW: Action Insights Panel */}
+                  <ActionInsightsPanel students={students} />
+
+                  {/* Statistics Dashboard with Hover Details */}
+                  <div className="mb-6 p-6 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 rounded-2xl shadow-2xl">
+                    <h3 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                      📊 Statistics Overview
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+                      {/* Total Students */}
+                      <div className="bg-gradient-to-br from-blue-500 to-blue-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                        <p className="text-xs opacity-90 mb-1">Total Students</p>
+                        <p className="text-3xl font-bold">{students.length}</p>
+                      </div>
+                      
+                      {/* BS Midwifery with Hover Breakdown */}
+                      <div className="relative group">
+                        <div className="bg-gradient-to-br from-green-500 to-green-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                          <p className="text-xs opacity-90 mb-1">BS Midwifery</p>
+                          <p className="text-3xl font-bold">{students.filter(s => s.course === 'BS Midwifery').length}</p>
+                        </div>
+                        {/* Hover Tooltip */}
+                        <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-white rounded-lg shadow-2xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-3 h-3 bg-white"></div>
+                          <p className="font-bold text-green-700 mb-2 text-sm">BS Midwifery by Year</p>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between"><span className="text-gray-700">1st Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Midwifery' && s.year === '1st Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">2nd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Midwifery' && s.year === '2nd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">3rd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Midwifery' && s.year === '3rd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">4th Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Midwifery' && s.year === '4th Year').length}</span></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* BS Radiologic Technology with Hover Breakdown */}
+                      <div className="relative group">
+                        <div className="bg-gradient-to-br from-purple-500 to-purple-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                          <p className="text-xs opacity-90 mb-1">BS Rad Tech</p>
+                          <p className="text-3xl font-bold">{students.filter(s => s.course === 'BS Radiologic Technology').length}</p>
+                        </div>
+                        {/* Hover Tooltip */}
+                        <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-white rounded-lg shadow-2xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-3 h-3 bg-white"></div>
+                          <p className="font-bold text-purple-700 mb-2 text-sm">BS Rad Tech by Year</p>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between"><span className="text-gray-700">1st Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Radiologic Technology' && s.year === '1st Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">2nd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Radiologic Technology' && s.year === '2nd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">3rd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Radiologic Technology' && s.year === '3rd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">4th Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Radiologic Technology' && s.year === '4th Year').length}</span></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* BS Nursing with Hover Breakdown */}
+                      <div className="relative group">
+                        <div className="bg-gradient-to-br from-orange-500 to-orange-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                          <p className="text-xs opacity-90 mb-1">BS Nursing</p>
+                          <p className="text-3xl font-bold">{students.filter(s => s.course === 'BS Nursing').length}</p>
+                        </div>
+                        {/* Hover Tooltip */}
+                        <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-white rounded-lg shadow-2xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-3 h-3 bg-white"></div>
+                          <p className="font-bold text-orange-700 mb-2 text-sm">BS Nursing by Year</p>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between"><span className="text-gray-700">1st Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Nursing' && s.year === '1st Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">2nd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Nursing' && s.year === '2nd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">3rd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Nursing' && s.year === '3rd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">4th Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Nursing' && s.year === '4th Year').length}</span></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* BS Medical Technology with Hover Breakdown */}
+                      <div className="relative group">
+                        <div className="bg-gradient-to-br from-pink-500 to-pink-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                          <p className="text-xs opacity-90 mb-1">BS Med Tech</p>
+                          <p className="text-3xl font-bold">{students.filter(s => s.course === 'BS Medical Technology').length}</p>
+                        </div>
+                        {/* Hover Tooltip */}
+                        <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-white rounded-lg shadow-2xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-3 h-3 bg-white"></div>
+                          <p className="font-bold text-pink-700 mb-2 text-sm">BS Med Tech by Year</p>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between"><span className="text-gray-700">1st Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Medical Technology' && s.year === '1st Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">2nd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Medical Technology' && s.year === '2nd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">3rd Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Medical Technology' && s.year === '3rd Year').length}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-700">4th Year:</span><span className="font-bold text-gray-900">{students.filter(s => s.course === 'BS Medical Technology' && s.year === '4th Year').length}</span></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* With Photos */}
+                      <div className="bg-gradient-to-br from-teal-500 to-teal-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                        <p className="text-xs opacity-90 mb-1">With Photos</p>
+                        <p className="text-3xl font-bold">{students.filter(s => s.photo).length}</p>
+                      </div>
+                      
+                      {/* New This Week */}
+                      <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 text-white p-4 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all cursor-pointer">
+                        <p className="text-xs opacity-90 mb-1">New This Week</p>
+                        <p className="text-3xl font-bold">{students.filter(s => s.isNew).length}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h3 className="text-xl font-bold text-blue-900">Student Records ({sortedStudents.length})</h3>
+                    {sortedStudents.length === 0 ? (
+                      <div className="text-center py-12 bg-gray-50 rounded-xl">
+                        <p className="text-gray-600 text-lg">No students found</p>
+                        <p className="text-gray-500 text-sm mt-2">Students will appear here once registered</p>
+                      </div>
+                    ) : (
+                      sortedStudents.map(student => (
+                        <div
+                          key={student.id}
+                          className={`p-4 rounded-xl border-2 ${student.isNew ? 'bg-green-50 border-green-500' : 'bg-white border-gray-300'}`}
+                        >
+                          <div className="flex items-start gap-4">
+                            {/* NEW: Selection Checkbox */}
+                            <input
+                              type="checkbox"
+                              checked={selectedStudents.includes(student.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedStudents([...selectedStudents, student.id]);
+                                } else {
+                                  setSelectedStudents(selectedStudents.filter(id => id !== student.id));
+                                }
+                              }}
+                              className="w-5 h-5 mt-2 cursor-pointer"
+                              style={{ accentColor: '#3b82f6' }}
+                            />
+                            
+                            {/* Photo Display on LEFT Side */}
+                            <div className="flex-shrink-0">
+                              {student.photo ? (
+                                <div className="relative group">
+                                  <img 
+                                    src={student.photo} 
+                                    alt={student.name} 
+                                    className="w-32 h-32 object-cover border-4 border-blue-500 rounded-lg shadow-lg hover:shadow-xl transition-all cursor-pointer"
+                                    onClick={async () => {
+                                      try {
+                                        // Create download link
+                                        const link = document.createElement('a');
+                                        link.href = student.photo;
+                                        link.download = `${student.studentNumber}.jpg`;
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                        
+                                        // Also save to server folder
+                                        const response = await fetch('/api/photos/save-single', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            studentNumber: student.studentNumber,
+                                            photo: student.photo
+                                          })
+                                        });
+                                        
+                                        if (response.ok) {
+                                          showToast('Photo Downloaded', `${student.studentNumber}.jpg saved to Downloads and student_photos folder!`, 'success');
+                                        } else {
+                                          showToast('Photo Downloaded', `${student.studentNumber}.jpg saved to Downloads!`, 'success');
+                                        }
+                                      } catch (err) {
+                                        console.error('Download error:', err);
+                                        showToast('Download Started', `${student.studentNumber}.jpg downloading...`, 'info');
+                                      }
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-lg transition-all flex items-center justify-center">
+                                    <span className="text-white opacity-0 group-hover:opacity-100 text-xs font-bold text-center px-2">
+                                      💾 Click to Download
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="w-32 h-32 bg-gray-200 border-4 border-gray-400 rounded-lg flex items-center justify-center">
+                                  <div className="text-center">
+                                    <p className="text-4xl mb-1">📷</p>
+                                    <p className="text-xs text-gray-600 font-semibold">No Photo</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Student Information */}
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="text-xl font-bold text-blue-900">{student.name}</p>
+                                {student.isNew && (
+                                  <span className="px-3 py-1 bg-green-600 text-white text-xs rounded-full font-bold">NEW</span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2">
+                                <strong>ID:</strong> {student.studentNumber} | 
+                                <strong> Program:</strong> {getCombinedLabel(student.course, student.year, student.section)} |
+                                <strong> Gender:</strong> {student.gender || 'N/A'}
+                              </p>
+                              {student.email && <p className="text-sm text-gray-600">📧 <strong>Email:</strong> {student.email}</p>}
+                              {student.phone && <p className="text-sm text-gray-600">📱 <strong>Phone:</strong> {student.phone}</p>}
+                              {student.birthday && <p className="text-sm text-gray-600">🎂 <strong>Birthday:</strong> {student.birthday}</p>}
+                              <p className="text-xs text-gray-500 mt-2">
+                                📅 Registered: {student.registeredDate} {student.registeredTime && `at ${student.registeredTime}`}
+                              </p>
+                            </div>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex flex-col gap-2">
+                              {student.isNew && (
+                                <button
+                                  onClick={() => markAsViewed(student.id)}
+                                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold whitespace-nowrap"
+                                >
+                                  <Icons.Eye /> View
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleEdit(student)}
+                                className="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-semibold whitespace-nowrap"
+                              >
+                                <Icons.Edit /> Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(student.id)}
+                                className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold whitespace-nowrap"
+                              >
+                                <Icons.Archive /> Archive
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                 </div>
+                  
+                  {/* NEW: Bulk Actions Bar */}
+                  <BulkActionsBar
+                    selectedCount={selectedStudents.length}
+                    onAction={handleBulkAction}
+                    onClearSelection={() => setSelectedStudents([])}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          <footer className="bg-blue-900 text-white py-6 mt-12">
+            <div className="max-w-7xl mx-auto px-4 text-center">
+              <p className="font-semibold">© 2026 NDHSCCI St. Albert Library System</p>
+              <p className="text-sm text-blue-200 mt-2">Student Management System</p>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<LibrarySystem />, document.getElementById('root'));
+  </script>
+</body>
+</html>
